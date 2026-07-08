@@ -2,5 +2,8 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.3.2",
     "tailwindcss": "^4.3.2"
+  },
+  "devDependencies": {
+    "gh-pages": "^6.3.0"
   }
 }

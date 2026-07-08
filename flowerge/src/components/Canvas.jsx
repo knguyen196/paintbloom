@@ -1,10 +1,4 @@
-import {
-  forwardRef,
-  useRef,
-  useEffect,
-  useImperativeHandle,
-  useCallback,
-} from "react";
+import { forwardRef, useRef, useEffect, useImperativeHandle } from "react";
 import { makeGrainCanvas } from "../lib/grain";
 
 const Canvas = forwardRef(function Canvas(
@@ -26,6 +20,7 @@ const Canvas = forwardRef(function Canvas(
   const canvasRef = useRef(null);
   const drawingRef = useRef(false);
   const currentStrokeRef = useRef(null);
+  const activePointerIdRef = useRef(null);
   const grainRef = useRef(null);
 
   useEffect(() => {
@@ -83,6 +78,7 @@ const Canvas = forwardRef(function Canvas(
   }
 
   function handlePointerDown(e) {
+    if (activePointerIdRef.current !== null) return;
     const pos = getPos(e);
     const ctx = canvasRef.current.getContext("2d");
 
@@ -98,6 +94,8 @@ const Canvas = forwardRef(function Canvas(
         onShapeFill(hitId);
       }
     } else {
+      activePointerIdRef.current = e.pointerId;
+      canvasRef.current.setPointerCapture(e.pointerId);
       drawingRef.current = true;
       currentStrokeRef.current = {
         color: activeColor,
@@ -107,7 +105,12 @@ const Canvas = forwardRef(function Canvas(
     }
   }
   function handlePointerMove(e) {
-    if (mode !== "draw" || !drawingRef.current) return;
+    if (
+      mode !== "draw" ||
+      !drawingRef.current ||
+      e.pointerId !== activePointerIdRef.current
+    )
+      return;
     const pos = getPos(e);
     currentStrokeRef.current.points.push(pos);
     const ctx = canvasRef.current.getContext("2d");
@@ -121,19 +124,16 @@ const Canvas = forwardRef(function Canvas(
     ctx.stroke();
   }
 
-  const handlePointerUp = useCallback(() => {
+  function handlePointerUp(e) {
+    if (e.pointerId !== activePointerIdRef.current) return;
+    activePointerIdRef.current = null;
     if (!drawingRef.current) return;
     drawingRef.current = false;
     if (currentStrokeRef.current.points.length > 1) {
       onStrokeComplete(currentStrokeRef.current);
     }
     currentStrokeRef.current = null;
-  }, [onStrokeComplete]);
-
-  useEffect(() => {
-    window.addEventListener("mouseup", handlePointerUp);
-    return () => window.removeEventListener("mouseup", handlePointerUp);
-  }, [handlePointerUp]);
+  }
 
   useImperativeHandle(ref, () => ({
     getDataURL: () => canvasRef.current.toDataURL("image/png"),
@@ -144,8 +144,11 @@ const Canvas = forwardRef(function Canvas(
       ref={canvasRef}
       width={width}
       height={height}
-      onMouseDown={handlePointerDown}
-      onMouseMove={handlePointerMove}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
+      className="max-w-full max-h-full cursor-crosshair touch-none shadow-[0_4px_24px_rgba(60,45,30,0.18)] bg-white"
     />
   );
 });

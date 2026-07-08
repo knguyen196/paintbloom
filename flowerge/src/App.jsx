@@ -90,7 +90,7 @@ function App() {
           pick a color, click a shape to fill it
         </div>
       </div>
-      <div className="flex flex-1 min-h-0">
+      <div className="flex flex-col md:flex-row flex-1 min-h-0">
         <div className="flex-1 flex items-center justify-center bg-[#efe9df] p-4">
           <Canvas
             ref={canvasApiRef}
@@ -108,7 +108,7 @@ function App() {
           />
         </div>
 
-        <div className="w-60 border-l border-border bg-panel p-4">
+        <div className="w-full md:w-60 border-l border-border bg-panel p-4">
           <Toolbar
             mode={mode}
             onModeChange={setMode}
